@@ -1,5 +1,3 @@
-shared_script '@WaveShield/resource/include.lua'
-
 fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
@@ -24,7 +22,7 @@ client_scripts {
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'server/*.lua'
+    'server/*.lua',
 }
 
 files {
