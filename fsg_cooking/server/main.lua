@@ -297,9 +297,13 @@ end)
 
 -- Helper: safely add an item via ox_inventory, returns success bool
 local function safeAddItem(source, itemName, qty)
+    if not itemName then
+        print('^1[fsg_cooking]^7: safeAddItem called with nil item name — check recipe/shop config')
+        return false
+    end
     local oxItems = exports.ox_inventory:Items()
     if not oxItems or not oxItems[itemName] then
-        print('^1[fsg_cooking]^7: Cannot add unknown item "' .. tostring(itemName) .. '" — add it to ox_inventory/data/items.lua')
+        print('^1[fsg_cooking]^7: Item "' .. itemName .. '" is not registered in ox_inventory — add it to ox_inventory/data/items.lua')
         return false
     end
     local ok, err = pcall(function()
@@ -381,11 +385,13 @@ lib.callback.register('fsg_cooking:purchaseItems', function(source, items, payme
     if not items or #items == 0 then return false, 'No items to purchase' end
 
     -- Calculate total using server-side prices
+    -- NUI may send item name as 'item', 'name', 'id', or 'itemName' — accept all variants
     local total = 0
     for _, item in ipairs(items) do
-        local serverPrice = findItemPrice(item.item)
+        local iName = item.item or item.name or item.id or item.itemName
+        local serverPrice = findItemPrice(iName)
         local unitPrice = serverPrice or (item.price or 0)
-        local qty = item.count or 1
+        local qty = item.count or item.quantity or item.amount or 1
         total = total + (unitPrice * qty)
     end
 
@@ -412,9 +418,12 @@ lib.callback.register('fsg_cooking:purchaseItems', function(source, items, payme
     -- Give all items; skip any not registered in ox_inventory
     local failedItems = {}
     for _, item in ipairs(items) do
-        local qty = item.count or 1
-        if not safeAddItem(source, item.item, qty) then
-            table.insert(failedItems, item.item)
+        local iName = item.item or item.name or item.id or item.itemName
+        local qty   = item.count or item.quantity or item.amount or 1
+        if not iName then
+            print('^1[fsg_cooking]^7: purchaseItems — cart entry has no item name field, skipping')
+        elseif not safeAddItem(source, iName, qty) then
+            table.insert(failedItems, iName)
         end
     end
 
@@ -598,41 +607,59 @@ lib.callback.register('fsg_cooking:server:clearActivePlacement', function(source
 end)
 
 -- ============================================================
--- ox_inventory Useable Items
+-- Useable Items Registration
 -- ============================================================
 
+-- Wraps the different useable-item registration APIs so we work with
+-- ox_inventory (any version), ESX legacy, and QBCore.
+local function registerUseableItem(itemName, cb)
+    -- Try ox_inventory first
+    local ok = pcall(function()
+        exports.ox_inventory:RegisterUsableItem(itemName, cb)
+    end)
+    if ok then return end
+
+    -- Fall back to framework-level registration
+    if framework == 'esx' and ESX then
+        ESX.RegisterUsableItem(itemName, function(source)
+            cb(source)
+        end)
+    elseif framework == 'qb' and QBCore then
+        QBCore.Functions.CreateUseableItem(itemName, function(source)
+            cb(source)
+        end)
+    else
+        print('^1[fsg_cooking]^7: Failed to register useable item "' .. itemName ..
+              '" — ox_inventory:RegisterUsableItem not found and no framework fallback available')
+    end
+end
+
 CreateThread(function()
-    Wait(5000) -- Wait for ox_inventory to finish loading and register its items
+    Wait(5000) -- Give ox_inventory time to fully start
 
-    -- Register all cooking appliance props as useable items
-    for k, v in pairs(Config.CookingProps) do
+    local registered = 0
+
+    for _, v in pairs(Config.CookingProps) do
         if v.item then
             local itemName = v.item
-            exports.ox_inventory:RegisterUsableItem(itemName, function(source)
+            registerUseableItem(itemName, function(source)
                 TriggerClientEvent('fsg_cooking:startPropPlacement', source, itemName)
             end)
-            if Config.Debug then
-                print('^3[fsg_cooking]^7: Registered useable item: ' .. itemName)
-            end
+            registered = registered + 1
         end
     end
 
-    -- Register all decoration props as useable items
-    for k, v in pairs(Config.DecorationProps) do
+    for _, v in pairs(Config.DecorationProps) do
         if v.item then
             local itemName = v.item
-            exports.ox_inventory:RegisterUsableItem(itemName, function(source)
+            registerUseableItem(itemName, function(source)
                 TriggerClientEvent('fsg_cooking:startPropPlacement', source, itemName)
             end)
-            if Config.Debug then
-                print('^3[fsg_cooking]^7: Registered useable item: ' .. itemName)
-            end
+            registered = registered + 1
         end
     end
 
-    if Config.Debug then
-        print('^3[fsg_cooking]^7: Registered useable items for all props')
-    end
+    print('^3[fsg_cooking]^7: Registered ' .. registered .. ' useable items')
 end)
 
 -- ============================================================
