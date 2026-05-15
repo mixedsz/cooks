@@ -88,8 +88,8 @@ AddEventHandler('fsg_cooking:consumeFood', function(itemName, data)
         end
 
         lib.notify({
-            title       = label,
-            description = foodType == 'drink' and '+ Thirst' or '+ Hunger',
+            title       = 'Eats',
+            description = 'You ate 1 ' .. label,
             type        = 'success',
             duration    = 3000,
         })
