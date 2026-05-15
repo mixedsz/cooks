@@ -199,6 +199,30 @@ AddEventHandler('playerJoining', function()
 end)
 
 -- ============================================================
+-- Helper: safely add an item via ox_inventory
+-- ============================================================
+
+local function safeAddItem(source, itemName, qty)
+    if not itemName then
+        print('^1[fsg_cooking]^7: safeAddItem called with nil item name — check recipe/shop config')
+        return false
+    end
+    local oxItems = exports.ox_inventory:Items()
+    if not oxItems or not oxItems[itemName] then
+        print('^1[fsg_cooking]^7: Item "' .. itemName .. '" is not registered in ox_inventory — add it to ox_inventory/data/items.lua')
+        return false
+    end
+    local ok, err = pcall(function()
+        exports.ox_inventory:AddItem(source, itemName, qty)
+    end)
+    if not ok then
+        print('^1[fsg_cooking]^7: AddItem error for "' .. itemName .. '": ' .. tostring(err))
+        return false
+    end
+    return true
+end
+
+-- ============================================================
 -- Cooking Callbacks
 -- ============================================================
 
@@ -294,27 +318,6 @@ lib.callback.register('fsg_cooking:removeBankMoney', function(source, amount)
     if not amount or amount <= 0 then return false end
     return removeBankMoney(source, amount)
 end)
-
--- Helper: safely add an item via ox_inventory, returns success bool
-local function safeAddItem(source, itemName, qty)
-    if not itemName then
-        print('^1[fsg_cooking]^7: safeAddItem called with nil item name — check recipe/shop config')
-        return false
-    end
-    local oxItems = exports.ox_inventory:Items()
-    if not oxItems or not oxItems[itemName] then
-        print('^1[fsg_cooking]^7: Item "' .. itemName .. '" is not registered in ox_inventory — add it to ox_inventory/data/items.lua')
-        return false
-    end
-    local ok, err = pcall(function()
-        exports.ox_inventory:AddItem(source, itemName, qty)
-    end)
-    if not ok then
-        print('^1[fsg_cooking]^7: AddItem error for "' .. itemName .. '": ' .. tostring(err))
-        return false
-    end
-    return true
-end
 
 -- Purchase a single item (ox-context shop)
 lib.callback.register('fsg_cooking:purchaseItem', function(source, itemName, count, pricePerItem, paymentMethod)
