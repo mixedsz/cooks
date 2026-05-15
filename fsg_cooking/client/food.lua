@@ -1,138 +1,113 @@
 -- Food consumption — client side
--- Handles eating animation, hand prop, and esx_status restoration.
+-- Progress circle + eating animation + hand prop + esx_status restore.
 
 local isEating = false
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- GTA V prop models used when eating/drinking
+-- GTA V prop models
 -- ─────────────────────────────────────────────────────────────────────────────
 local props = {
-    food  = 'prop_cs_burger_01',     -- held in right hand, solid food
-    drink = 'prop_amb_drink_can',    -- held in right hand, cans / bottles
-    bowl  = 'prop_food_bs_noodles',  -- bowl held in left hand, soups / ramen
+    food  = 'prop_cs_burger_01',
+    drink = 'prop_amb_drink_can',
+    bowl  = 'prop_food_bs_noodles',
 }
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Animations
+-- Animation / bone config per food type
 -- ─────────────────────────────────────────────────────────────────────────────
-local anims = {
+local eatConfig = {
     food = {
         dict     = 'mp_player_inteat@burger',
         clip     = 'mp_player_int_eat_burger',
-        duration = 6700,
         flag     = 51,
-        -- right hand bone, matches burger animation nicely
-        bone     = 57005,
-        offset   = vector3(0.12,  0.028, 0.001),
-        rotation = vector3(10.0, 160.0, 170.0),
+        duration = 6700,
+        bone     = 57005,                      -- right hand
+        pos      = vec3(0.12, 0.028, 0.001),
+        rot      = vec3(10.0, 160.0, 170.0),
     },
     drink = {
         dict     = 'mp_player_intdrink',
         clip     = 'idle',
-        duration = 4000,
         flag     = 51,
+        duration = 4000,
         bone     = 57005,
-        offset   = vector3(0.0,   0.0,   0.003),
-        rotation = vector3(0.0,   0.0,   0.0),
+        pos      = vec3(0.0, 0.0, 0.003),
+        rot      = vec3(0.0, 0.0, 0.0),
     },
     bowl = {
         dict     = 'mp_player_inteat@burger',
         clip     = 'mp_player_int_eat_burger',
-        duration = 6700,
         flag     = 51,
-        -- left hand for bowls
-        bone     = 18905,
-        offset   = vector3(0.1,   0.06,  0.02),
-        rotation = vector3(70.0,  0.0,   0.0),
+        duration = 6700,
+        bone     = 18905,                      -- left hand
+        pos      = vec3(0.1, 0.06, 0.02),
+        rot      = vec3(70.0, 0.0, 0.0),
     },
 }
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Helpers
--- ─────────────────────────────────────────────────────────────────────────────
-
-local function loadAnimDict(dict)
-    if not HasAnimDictLoaded(dict) then
-        RequestAnimDict(dict)
-        local timeout = 0
-        while not HasAnimDictLoaded(dict) and timeout < 100 do
-            Wait(50)
-            timeout = timeout + 1
-        end
-    end
-    return HasAnimDictLoaded(dict)
-end
-
-local function loadModel(hash)
-    if not HasModelLoaded(hash) then
-        RequestModel(hash)
-        local timeout = 0
-        while not HasModelLoaded(hash) and timeout < 100 do
-            Wait(50)
-            timeout = timeout + 1
-        end
-    end
-    return HasModelLoaded(hash)
-end
-
--- ─────────────────────────────────────────────────────────────────────────────
--- Main consumption handler
+-- Main handler
 -- ─────────────────────────────────────────────────────────────────────────────
 
 RegisterNetEvent('fsg_cooking:consumeFood')
-AddEventHandler('fsg_cooking:consumeFood', function(data)
-    if isEating then return end
-    isEating = true
-
-    local ped      = PlayerPedId()
-    local foodType = data.foodType or 'food'
-    local anim     = anims[foodType] or anims.food
-    local propName = props[foodType] or props.food
-    local propHash = GetHashKey(propName)
-
-    -- Load anim dict
-    if not loadAnimDict(anim.dict) then
-        isEating = false
+AddEventHandler('fsg_cooking:consumeFood', function(itemName, data)
+    if isEating then
+        lib.notify({ title = 'Already Eating', description = "You're already eating something", type = 'error', duration = 2000 })
         return
     end
+    isEating = true
 
-    -- Load prop model
-    local hasProp = loadModel(propHash)
-    local prop    = nil
+    -- Get the item's display label from ox_inventory
+    local oxItems  = exports.ox_inventory:Items()
+    local label    = (oxItems[itemName] and oxItems[itemName].label) or itemName
 
-    -- Create and attach prop
-    if hasProp then
-        prop = CreateObject(propHash, 0.0, 0.0, 0.0, true, true, false)
-        AttachEntityToEntity(
-            prop, ped,
-            GetPedBoneIndex(ped, anim.bone),
-            anim.offset.x, anim.offset.y, anim.offset.z,
-            anim.rotation.x, anim.rotation.y, anim.rotation.z,
-            true, true, false, true, 1, true
-        )
+    local foodType = data.foodType or 'food'
+    local cfg      = eatConfig[foodType] or eatConfig.food
+    local propName = props[foodType]     or props.food
+
+    -- Progress circle (handles animation + prop internally via ox_lib)
+    local action = foodType == 'drink' and 'Drinking' or 'Eating'
+
+    local completed = lib.progressCircle({
+        duration    = cfg.duration,
+        label       = action .. ': ' .. label,
+        position    = 'bottom',
+        useWhileDead = false,
+        canCancel   = false,
+        disable     = { move = false, sprint = true, combat = true },
+        anim        = { dict = cfg.dict, clip = cfg.clip, flag = cfg.flag },
+        prop        = {
+            model = propName,
+            bone  = cfg.bone,
+            pos   = cfg.pos,
+            rot   = cfg.rot,
+        },
+    })
+
+    if completed then
+        -- Apply esx_status
+        if data.hunger and data.hunger > 0 then
+            TriggerEvent('esx_status:add', 'hunger', data.hunger)
+        end
+        if data.thirst and data.thirst > 0 then
+            TriggerEvent('esx_status:add', 'thirst', data.thirst)
+        end
+
+        -- Result notification
+        local statLine
+        if foodType == 'drink' then
+            statLine = '+ Thirst'
+        else
+            statLine = '+ Hunger'
+        end
+
+        lib.notify({
+            title       = label,
+            description = statLine,
+            type        = 'success',
+            duration    = 3000,
+        })
     end
-
-    -- Play animation
-    TaskPlayAnim(ped, anim.dict, anim.clip, 8.0, -8.0, anim.duration, anim.flag, 0, false, false, false)
-
-    -- Wait for eat/drink animation to play out
-    Wait(anim.duration)
-
-    -- Apply esx_status effects
-    if data.hunger and data.hunger > 0 then
-        TriggerEvent('esx_status:add', 'hunger', data.hunger)
-    end
-    if data.thirst and data.thirst > 0 then
-        TriggerEvent('esx_status:add', 'thirst', data.thirst)
-    end
-
-    -- Cleanup
-    if prop and DoesEntityExist(prop) then
-        DeleteObject(prop)
-    end
-    ClearPedTasks(ped)
-    RemoveAnimDict(anim.dict)
-    SetModelAsNoLongerNeeded(propHash)
 
     isEating = false
 end)
