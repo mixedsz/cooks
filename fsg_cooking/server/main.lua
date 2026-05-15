@@ -602,15 +602,18 @@ end)
 -- ============================================================
 
 CreateThread(function()
-    Wait(2000) -- Wait for ox_inventory to finish loading
+    Wait(5000) -- Wait for ox_inventory to finish loading and register its items
 
     -- Register all cooking appliance props as useable items
     for k, v in pairs(Config.CookingProps) do
         if v.item then
             local itemName = v.item
-            exports.ox_inventory:RegisterUsableItem(itemName, function(playerId)
-                lib.callback.call('fsg_cooking:client:startPropPlacement', playerId, function() end, itemName)
+            exports.ox_inventory:RegisterUsableItem(itemName, function(source)
+                TriggerClientEvent('fsg_cooking:startPropPlacement', source, itemName)
             end)
+            if Config.Debug then
+                print('^3[fsg_cooking]^7: Registered useable item: ' .. itemName)
+            end
         end
     end
 
@@ -618,9 +621,12 @@ CreateThread(function()
     for k, v in pairs(Config.DecorationProps) do
         if v.item then
             local itemName = v.item
-            exports.ox_inventory:RegisterUsableItem(itemName, function(playerId)
-                lib.callback.call('fsg_cooking:client:startPropPlacement', playerId, function() end, itemName)
+            exports.ox_inventory:RegisterUsableItem(itemName, function(source)
+                TriggerClientEvent('fsg_cooking:startPropPlacement', source, itemName)
             end)
+            if Config.Debug then
+                print('^3[fsg_cooking]^7: Registered useable item: ' .. itemName)
+            end
         end
     end
 

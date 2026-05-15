@@ -613,14 +613,10 @@ CreateThread(function()
     end
 end)
 
--- ─── lib.callback: startPropPlacement ───────────────────────
--- Called by the server/item use handler.
--- Enforces the inventory cooldown before starting placement.
-lib.callback.register("fsg_cooking:client:startPropPlacement", function(itemName)
-    -- Clear any lingering lock first
+-- Shared logic for starting prop placement (used by both net event and lib.callback paths)
+local function handleStartPropPlacement(itemName)
     ClearPlacementLock()
 
-    -- Inventory cooldown check
     local now = GetGameTimer()
     local timeSinceInventory = now - lastInventoryUsageTime
     if timeSinceInventory < inventoryCooldown then
@@ -635,6 +631,17 @@ lib.callback.register("fsg_cooking:client:startPropPlacement", function(itemName
     lastInventoryUsageTime = GetGameTimer()
     StartPropPlacement(itemName)
     return true
+end
+
+-- Net event path: fired directly by the server useable-item handler (primary)
+RegisterNetEvent('fsg_cooking:startPropPlacement')
+AddEventHandler('fsg_cooking:startPropPlacement', function(itemName)
+    handleStartPropPlacement(itemName)
+end)
+
+-- lib.callback path: kept as fallback for any server→client callback calls
+lib.callback.register("fsg_cooking:client:startPropPlacement", function(itemName)
+    return handleStartPropPlacement(itemName)
 end)
 
 -- ─── lib.callback: syncProp ─────────────────────────────────
