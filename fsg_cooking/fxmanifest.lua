@@ -14,6 +14,7 @@ shared_scripts {
     'config/recipes.lua',
     'config/decorations.lua',
     'config/stores.lua',
+    'config/notify_wrapper.lua',
 }
 
 client_scripts {
