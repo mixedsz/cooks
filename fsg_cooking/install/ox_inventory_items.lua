@@ -211,6 +211,13 @@
     close  = true,
     description = 'Fresh squid.',
 },
+['fsg_pepperoni'] = {
+    label  = 'Pepperoni',
+    weight = 150,
+    stack  = true,
+    close  = true,
+    description = 'Sliced pepperoni.',
+},
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- FRUITS

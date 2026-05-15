@@ -244,7 +244,7 @@ lib.callback.register('fsg_cooking:server:completeCooking', function(source, dat
     -- Give results based on success
     if data.success then
         for _, result in ipairs(recipe.resultItems) do
-            exports.ox_inventory:AddItem(source, result.item, result.count)
+            safeAddItem(source, result.item, result.count)
         end
         lib.notify(source, {
             title = 'Cooking Complete',
@@ -253,7 +253,7 @@ lib.callback.register('fsg_cooking:server:completeCooking', function(source, dat
         })
     elseif recipe.failedResultItems and #recipe.failedResultItems > 0 then
         for _, result in ipairs(recipe.failedResultItems) do
-            exports.ox_inventory:AddItem(source, result.item, result.count)
+            safeAddItem(source, result.item, result.count)
         end
         lib.notify(source, {
             title = 'Cooking Failed',
@@ -295,9 +295,34 @@ lib.callback.register('fsg_cooking:removeBankMoney', function(source, amount)
     return removeBankMoney(source, amount)
 end)
 
+-- Helper: safely add an item via ox_inventory, returns success bool
+local function safeAddItem(source, itemName, qty)
+    local oxItems = exports.ox_inventory:Items()
+    if not oxItems or not oxItems[itemName] then
+        print('^1[fsg_cooking]^7: Cannot add unknown item "' .. tostring(itemName) .. '" — add it to ox_inventory/data/items.lua')
+        return false
+    end
+    local ok, err = pcall(function()
+        exports.ox_inventory:AddItem(source, itemName, qty)
+    end)
+    if not ok then
+        print('^1[fsg_cooking]^7: AddItem error for "' .. itemName .. '": ' .. tostring(err))
+        return false
+    end
+    return true
+end
+
 -- Purchase a single item (ox-context shop)
 lib.callback.register('fsg_cooking:purchaseItem', function(source, itemName, count, pricePerItem, paymentMethod)
     if not itemName or not count or count < 1 then return false, 'Invalid request' end
+
+    -- Validate item exists in ox_inventory before charging the player
+    local oxItems = exports.ox_inventory:Items()
+    if not oxItems or not oxItems[itemName] then
+        lib.notify(source, { title = 'Purchase Failed', description = 'Item not available', type = 'error' })
+        print('^1[fsg_cooking]^7: Purchase blocked — "' .. tostring(itemName) .. '" not registered in ox_inventory')
+        return false, 'Item not registered'
+    end
 
     -- Server-side price lookup to prevent tampering
     local serverPrice = findItemPrice(itemName)
@@ -323,7 +348,26 @@ lib.callback.register('fsg_cooking:purchaseItem', function(source, itemName, cou
         end
     end
 
-    exports.ox_inventory:AddItem(source, itemName, count)
+    local added = safeAddItem(source, itemName, count)
+    if not added then
+        -- Refund the payment since we couldn't give the item
+        if total > 0 then
+            if paymentMethod == 'cash' then
+                exports.ox_inventory:AddItem(source, 'money', total)
+            elseif paymentMethod == 'card' then
+                if framework == 'esx' then
+                    local xPlayer = ESX.GetPlayerFromId(source)
+                    if xPlayer then xPlayer.addAccountMoney('bank', total) end
+                elseif framework == 'qb' then
+                    local Player = QBCore.Functions.GetPlayer(source)
+                    if Player then Player.Functions.AddMoney('bank', total, 'fsg_cooking_refund') end
+                end
+            end
+        end
+        lib.notify(source, { title = 'Purchase Failed', description = 'Item unavailable — payment refunded', type = 'error' })
+        return false, 'Item unavailable'
+    end
+
     lib.notify(source, {
         title = 'Purchase Complete',
         description = 'You purchased ' .. count .. 'x ' .. itemName,
@@ -365,17 +409,47 @@ lib.callback.register('fsg_cooking:purchaseItems', function(source, items, payme
         end
     end
 
-    -- Give all items
+    -- Give all items; skip any not registered in ox_inventory
+    local failedItems = {}
     for _, item in ipairs(items) do
         local qty = item.count or 1
-        exports.ox_inventory:AddItem(source, item.item, qty)
+        if not safeAddItem(source, item.item, qty) then
+            table.insert(failedItems, item.item)
+        end
     end
 
-    lib.notify(source, {
-        title = 'Purchase Complete',
-        description = 'Your order has been placed!',
-        type = 'success'
-    })
+    if #failedItems == #items then
+        -- Every item failed — refund the whole payment
+        if total > 0 then
+            if paymentMethod == 'cash' then
+                exports.ox_inventory:AddItem(source, 'money', total)
+            elseif paymentMethod == 'bank' then
+                if framework == 'esx' then
+                    local xPlayer = ESX.GetPlayerFromId(source)
+                    if xPlayer then xPlayer.addAccountMoney('bank', total) end
+                elseif framework == 'qb' then
+                    local Player = QBCore.Functions.GetPlayer(source)
+                    if Player then Player.Functions.AddMoney('bank', total, 'fsg_cooking_refund') end
+                end
+            end
+        end
+        lib.notify(source, { title = 'Purchase Failed', description = 'Items unavailable — payment refunded', type = 'error' })
+        return false, 'Items not registered in ox_inventory'
+    end
+
+    if #failedItems > 0 then
+        lib.notify(source, {
+            title = 'Partial Purchase',
+            description = #failedItems .. ' item(s) were unavailable and have been skipped',
+            type = 'warning'
+        })
+    else
+        lib.notify(source, {
+            title = 'Purchase Complete',
+            description = 'Your order has been placed!',
+            type = 'success'
+        })
+    end
     return true, 'Success'
 end)
 
@@ -495,7 +569,7 @@ lib.callback.register('fsg_cooking:server:pickupProp', function(source, netId, p
     local propItem, _ = getPropDataFromModel(prop.model)
     if not propItem then return false end
 
-    exports.ox_inventory:AddItem(source, propItem, 1)
+    safeAddItem(source, propItem, 1)
 
     -- Remove from memory
     placedProps[propId] = nil
