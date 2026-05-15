@@ -155,7 +155,7 @@ end
 -- Send all stored props to a specific player
 local function syncPropsToPlayer(src)
     for propId, prop in pairs(placedProps) do
-        lib.callback.call('fsg_cooking:client:createViewOnlyProp', src, function() end,
+        TriggerClientEvent('fsg_cooking:client:createViewOnlyProp', src,
             prop.model, prop.coords, prop.rotation, prop.owner or 0, propId)
     end
 end
@@ -520,14 +520,14 @@ lib.callback.register('fsg_cooking:server:placeProp', function(source, model, co
     end
 
     -- Tell the placing player to create their ownable local copy
-    lib.callback.call('fsg_cooking:client:createPropLocally', source, function() end,
+    TriggerClientEvent('fsg_cooking:client:createPropLocally', source,
         model, c, r, source, propId)
 
     -- Tell all other players to create a view-only copy
     for _, pid in ipairs(GetPlayers()) do
         local playerId = tonumber(pid)
         if playerId ~= source then
-            lib.callback.call('fsg_cooking:client:createViewOnlyProp', playerId, function() end,
+            TriggerClientEvent('fsg_cooking:client:createViewOnlyProp', playerId,
                 model, c, r, source, propId)
         end
     end
@@ -589,9 +589,7 @@ lib.callback.register('fsg_cooking:server:pickupProp', function(source, netId, p
     end
 
     -- Tell ALL clients to delete their local copy of this prop
-    for _, pid in ipairs(GetPlayers()) do
-        lib.callback.call('fsg_cooking:client:deletePropById', tonumber(pid), function() end, propId)
-    end
+    TriggerClientEvent('fsg_cooking:client:deletePropById', -1, propId)
 
     if Config.Debug then
         print('^3[fsg_cooking]^7: Prop ' .. propId .. ' picked up by ' .. identifier)

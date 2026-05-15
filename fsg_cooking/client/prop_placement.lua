@@ -683,11 +683,11 @@ lib.callback.register("fsg_cooking:client:syncProp", function(netId, model, coor
     return false
 end)
 
--- ─── lib.callback: createPropLocally ────────────────────────
+-- ─── createPropLocally (internal function) ──────────────────
 -- Creates a non-networked local object, applies decorators and
 -- interaction zones, then stores it in placedPropsById.
 -- Args: model, coords, rotation, owner, propId
-lib.callback.register("fsg_cooking:client:createPropLocally", function(model, coords, rotation, owner, propId)
+local function createPropLocally(model, coords, rotation, owner, propId)
     -- Parameter validation
     if not model then
         print("Error: Missing 'model' parameter in createPropLocally")
@@ -845,6 +845,17 @@ lib.callback.register("fsg_cooking:client:createPropLocally", function(model, co
         unloadModel(modelHash)
         return false
     end
+end
+
+-- lib.callback path (kept for backwards compat)
+lib.callback.register("fsg_cooking:client:createPropLocally", function(model, coords, rotation, owner, propId)
+    return createPropLocally(model, coords, rotation, owner, propId)
+end)
+
+-- Net event path (primary — used by server TriggerClientEvent)
+RegisterNetEvent("fsg_cooking:client:createPropLocally")
+AddEventHandler("fsg_cooking:client:createPropLocally", function(model, coords, rotation, owner, propId)
+    createPropLocally(model, coords, rotation, owner, propId)
 end)
 
 -- ─── createViewOnlyProp (internal function) ──────────────────
