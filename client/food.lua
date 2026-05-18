@@ -1,13 +1,13 @@
--- Food consumption — client side
+-- Food consumption -- client side
 -- Progress circle + eating animation + hand prop + esx_status restore.
 
 local isEating = false
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Props — all confirmed present in the base Steam GTA V install.
+-- -----------------------------------------------------------------------------
+-- Props -- all confirmed present in the base Steam GTA V install.
 -- Right hand (bone 57005) is used for every type so the prop follows
 -- whichever animation is playing.
--- ─────────────────────────────────────────────────────────────────────────────
+-- -----------------------------------------------------------------------------
 local eatConfig = {
     food = {
         prop     = 'prop_cs_burger_01',
@@ -43,9 +43,9 @@ local eatConfig = {
     },
 }
 
--- ─────────────────────────────────────────────────────────────────────────────
+-- -----------------------------------------------------------------------------
 -- Handler
--- ─────────────────────────────────────────────────────────────────────────────
+-- -----------------------------------------------------------------------------
 
 RegisterNetEvent('flake_cooking:consumeFood')
 AddEventHandler('flake_cooking:consumeFood', function(itemName, data)

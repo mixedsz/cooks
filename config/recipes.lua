@@ -1175,7 +1175,7 @@ Config.Recipes = {
                 }
             },
             {
-                label = "Sautéing mushrooms...",
+                label = "Sauteing mushrooms...",
                 time = 8,
                 position = "bottom",
                 skillCheck = {

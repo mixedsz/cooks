@@ -3,7 +3,7 @@
 -- Prop placement, sync, creation and management
 -- ============================================================
 
--- ─── Module-level state ─────────────────────────────────────
+-- --- Module-level state -------------------------------------
 local isPlacing             = false   -- currently in placement flow
 local propData              = nil     -- Config prop entry for the item being placed
 local placingEntity         = nil     -- temp gizmo entity
@@ -27,7 +27,7 @@ local joaat                 = joaat
 -- propId -> { entity, netId, model, owner, coords, viewOnly }
 local placedPropsById = {}
 
--- ─── GetPropIdByEntity ──────────────────────────────────────
+-- --- GetPropIdByEntity --------------------------------------
 -- Searches placedPropsById for the given entity handle and
 -- returns its propId key, or nil if not found.
 function GetPropIdByEntity(entity)
@@ -42,7 +42,7 @@ function GetPropIdByEntity(entity)
     return nil
 end
 
--- ─── gameEventTriggered – injury detection ──────────────────
+-- --- gameEventTriggered - injury detection ------------------
 AddEventHandler("gameEventTriggered", function(eventName, eventArgs)
     if eventName ~= "CEventNetworkEntityDamage" then return end
 
@@ -60,7 +60,7 @@ AddEventHandler("gameEventTriggered", function(eventName, eventArgs)
     end
 end)
 
--- ─── RotationToDirection ────────────────────────────────────
+-- --- RotationToDirection ------------------------------------
 -- Converts an Euler rotation (degrees) to a normalised
 -- direction vector (x forward, y right, z up convention).
 function RotationToDirection(rot)
@@ -76,7 +76,7 @@ function RotationToDirection(rot)
     return direction
 end
 
--- ─── RayCastGamePlayCamera ──────────────────────────────────
+-- --- RayCastGamePlayCamera ----------------------------------
 -- Fires a shape-test ray from the gameplay camera origin in
 -- the camera's forward direction for `distance` units.
 -- Returns: hitResult, hitCoords, hitEntity
@@ -103,7 +103,7 @@ function RayCastGamePlayCamera(distance)
     return hitResult, hitCoords, hitEntity
 end
 
--- ─── DrawPropAxes ───────────────────────────────────────────
+-- --- DrawPropAxes -------------------------------------------
 -- Draws RGB debug axis lines on the given entity each frame.
 -- Red = forward (Y axis), Green = right (X axis), Blue = up (Z axis).
 function DrawPropAxes(entity)
@@ -113,15 +113,15 @@ function DrawPropAxes(entity)
     local endRight   = pos + right   * 1.0
     local endUp      = pos + up      * 1.0
 
-    -- Red – forward
+    -- Red - forward
     DrawLine(pos.x, pos.y, pos.z + 0.1, endForward.x, endForward.y, endForward.z, 255, 0, 0, 255)
-    -- Green – right
+    -- Green - right
     DrawLine(pos.x, pos.y, pos.z + 0.1, endRight.x,   endRight.y,   endRight.z,   0, 255, 0, 255)
-    -- Blue – up
+    -- Blue - up
     DrawLine(pos.x, pos.y, pos.z + 0.1, endUp.x,      endUp.y,      endUp.z,      0, 0, 255, 255)
 end
 
--- ─── loadModel ──────────────────────────────────────────────
+-- --- loadModel ----------------------------------------------
 -- Loads a model by hash.  Uses lib.requestModel when available,
 -- otherwise falls back to a manual RequestModel loop (5 s timeout).
 -- Returns true on success, false on failure.
@@ -151,12 +151,12 @@ function loadModel(hash)
     return true
 end
 
--- ─── unloadModel ────────────────────────────────────────────
+-- --- unloadModel --------------------------------------------
 function unloadModel(hash)
     SetModelAsNoLongerNeeded(hash)
 end
 
--- ─── IsPlayerInjured ────────────────────────────────────────
+-- --- IsPlayerInjured ----------------------------------------
 -- Returns true when the player has been recently hit (isInjured)
 -- or is currently swimming.
 function IsPlayerInjured()
@@ -164,7 +164,7 @@ function IsPlayerInjured()
     return isInjured or IsPedSwimming(ped)
 end
 
--- ─── IsPlayerInInvalidState ─────────────────────────────────
+-- --- IsPlayerInInvalidState ---------------------------------
 -- Returns true when the player is in a state that prevents
 -- prop placement (currently: swimming only).
 function IsPlayerInInvalidState()
@@ -172,7 +172,7 @@ function IsPlayerInInvalidState()
     return IsPedSwimming(ped)
 end
 
--- ─── CancelPlacementDueToInjury ─────────────────────────────
+-- --- CancelPlacementDueToInjury -----------------------------
 -- Cleans up an in-progress placement because the player was hurt.
 function CancelPlacementDueToInjury()
     if DoesEntityExist(placingEntity) then
@@ -191,7 +191,7 @@ function CancelPlacementDueToInjury()
     })
 end
 
--- ─── StartPropPlacement ─────────────────────────────────────
+-- --- StartPropPlacement -------------------------------------
 -- Full gizmo-based prop placement flow.
 -- 1. Guard checks (lock, swim, cooldown).
 -- 2. Look up prop config and load model.
@@ -427,7 +427,7 @@ function StartPropPlacement(itemName)
         local progressRunning  = true
         local cancelledByHealth = false
 
-        -- Health monitor thread – cancels progress if player gets injured
+        -- Health monitor thread - cancels progress if player gets injured
         CreateThread(function()
             if Config.Debug then
                 print("^5[DEBUG]^7 Health monitor thread started")
@@ -477,7 +477,7 @@ function StartPropPlacement(itemName)
         end
 
         if coStatus and coResult then
-            -- ─── Placement confirmed ─────────────────────────────
+            -- --- Placement confirmed -----------------------------
             if Config.Debug then
                 print("^3[flake_cooking]^7: Gizmo placement confirmed, deleting gizmo object")
             end
@@ -547,7 +547,7 @@ function StartPropPlacement(itemName)
             end
 
         else
-            -- ─── Placement failed / cancelled ────────────────────
+            -- --- Placement failed / cancelled --------------------
             if Config.Debug then
                 print("^1[DEBUG]^7 Placement failed!")
                 print("^1[DEBUG]^7 - Status was:", coStatus)
@@ -569,7 +569,7 @@ function StartPropPlacement(itemName)
         end
 
     else
-        -- ─── Gizmo returned no data (player cancelled via gizmo) ─
+        -- --- Gizmo returned no data (player cancelled via gizmo) -
         if Config.Debug then
             print("^3[flake_cooking]^7: Gizmo placement cancelled (no data returned from gizmo)")
         end
@@ -582,7 +582,7 @@ function StartPropPlacement(itemName)
     placementLock = false
 end
 
--- ─── ClearPlacementLock ─────────────────────────────────────
+-- --- ClearPlacementLock -------------------------------------
 -- Resets placementLock and tells the server to clear its
 -- active-placement record for this player.
 function ClearPlacementLock()
@@ -593,7 +593,7 @@ function ClearPlacementLock()
     lib.callback.await("flake_cooking:server:clearActivePlacement", false)
 end
 
--- ─── Stale lock watchdog thread ─────────────────────────────
+-- --- Stale lock watchdog thread -----------------------------
 -- Clears placementLock on resource start, snapshots initial
 -- health, then every 60 s auto-clears a stale lock (one that
 -- is set but isPlacing is false, meaning something went wrong).
@@ -639,12 +639,12 @@ AddEventHandler('flake_cooking:startPropPlacement', function(itemName)
     handleStartPropPlacement(itemName)
 end)
 
--- lib.callback path: kept as fallback for any server→client callback calls
+-- lib.callback path: kept as fallback for any server->client callback calls
 lib.callback.register("flake_cooking:client:startPropPlacement", function(itemName)
     return handleStartPropPlacement(itemName)
 end)
 
--- ─── lib.callback: syncProp ─────────────────────────────────
+-- --- lib.callback: syncProp ---------------------------------
 -- Updates an existing networked entity's position/rotation, or
 -- creates a new networked object and optionally assigns it the
 -- given network id.
@@ -683,7 +683,7 @@ lib.callback.register("flake_cooking:client:syncProp", function(netId, model, co
     return false
 end)
 
--- ─── createPropLocally (internal function) ──────────────────
+-- --- createPropLocally (internal function) ------------------
 -- Creates a non-networked local object, applies decorators and
 -- interaction zones, then stores it in placedPropsById.
 -- Args: model, coords, rotation, owner, propId
@@ -852,13 +852,13 @@ lib.callback.register("flake_cooking:client:createPropLocally", function(model, 
     return createPropLocally(model, coords, rotation, owner, propId)
 end)
 
--- Net event path (primary — used by server TriggerClientEvent)
+-- Net event path (primary -- used by server TriggerClientEvent)
 RegisterNetEvent("flake_cooking:client:createPropLocally")
 AddEventHandler("flake_cooking:client:createPropLocally", function(model, coords, rotation, owner, propId)
     createPropLocally(model, coords, rotation, owner, propId)
 end)
 
--- ─── createViewOnlyProp (internal function) ──────────────────
+-- --- createViewOnlyProp (internal function) ------------------
 -- Creates a non-interactable (viewOnly = true) copy of a prop
 -- for players who are not the owner.  Used for both the
 -- lib.callback and the RegisterNetEvent paths below.
@@ -1042,18 +1042,18 @@ local function createViewOnlyProp(model, coords, rotation, owner, propId)
     end
 end
 
--- ─── lib.callback: createViewOnlyProp ───────────────────────
+-- --- lib.callback: createViewOnlyProp -----------------------
 lib.callback.register("flake_cooking:client:createViewOnlyProp", function(model, coords, rotation, owner, propId)
     return createViewOnlyProp(model, coords, rotation, owner, propId)
 end)
 
--- ─── RegisterNetEvent: createViewOnlyProp ───────────────────
+-- --- RegisterNetEvent: createViewOnlyProp -------------------
 RegisterNetEvent("flake_cooking:client:createViewOnlyProp")
 AddEventHandler("flake_cooking:client:createViewOnlyProp", function(model, coords, rotation, owner, propId)
     createViewOnlyProp(model, coords, rotation, owner, propId)
 end)
 
--- ─── Helper: delete a prop entity robustly ──────────────────
+-- --- Helper: delete a prop entity robustly ------------------
 -- Tries DeleteEntity; if it stubbornly persists, teleports it
 -- underground and hides it before trying once more.
 local function deletePropEntity(propEntry, propId)
@@ -1070,7 +1070,7 @@ local function deletePropEntity(propEntry, propId)
     placedPropsById[propId] = nil
 end
 
--- ─── lib.callback: deletePropById ───────────────────────────
+-- --- lib.callback: deletePropById ---------------------------
 lib.callback.register("flake_cooking:client:deletePropById", function(propId)
     if not propId then return false end
 
@@ -1091,7 +1091,7 @@ lib.callback.register("flake_cooking:client:deletePropById", function(propId)
     end
 end)
 
--- ─── RegisterNetEvent: deletePropById ───────────────────────
+-- --- RegisterNetEvent: deletePropById -----------------------
 RegisterNetEvent("flake_cooking:client:deletePropById")
 AddEventHandler("flake_cooking:client:deletePropById", function(propId)
     if not propId then return end
@@ -1121,7 +1121,7 @@ AddEventHandler("flake_cooking:client:deletePropById", function(propId)
     end
 end)
 
--- ─── lib.callback: deleteEntityByNetId ──────────────────────
+-- --- lib.callback: deleteEntityByNetId ----------------------
 -- Deletes an entity by its network id.  Falls back to scanning
 -- the CObject game pool when the direct network lookup fails.
 lib.callback.register("flake_cooking:client:deleteEntityByNetId", function(netId)
@@ -1170,7 +1170,7 @@ lib.callback.register("flake_cooking:client:deleteEntityByNetId", function(netId
     return false
 end)
 
--- ─── RegisterNetEvent: deleteEntityByNetId ──────────────────
+-- --- RegisterNetEvent: deleteEntityByNetId ------------------
 RegisterNetEvent("flake_cooking:client:deleteEntityByNetId")
 AddEventHandler("flake_cooking:client:deleteEntityByNetId", function(netId)
     if not netId or netId <= 0 then return end
@@ -1216,7 +1216,7 @@ AddEventHandler("flake_cooking:client:deleteEntityByNetId", function(netId)
     end
 end)
 
--- ─── onResourceStop cleanup ─────────────────────────────────
+-- --- onResourceStop cleanup ---------------------------------
 AddEventHandler("onResourceStop", function(resourceName)
     if resourceName ~= GetCurrentResourceName() then return end
 
@@ -1239,7 +1239,7 @@ AddEventHandler("onResourceStop", function(resourceName)
     placedPropsById = {}
 end)
 
--- ─── Startup thread – register decorators & setup targets ───
+-- --- Startup thread - register decorators & setup targets ---
 CreateThread(function()
     -- Register "PropOwner" decorator (type 3 = INT)
     if not DecorIsRegisteredAsType("PropOwner", 3) then
@@ -1254,7 +1254,7 @@ CreateThread(function()
     SetupTargetInteractions()
 end)
 
--- ─── SetupTargetInteractions ────────────────────────────────
+-- --- SetupTargetInteractions --------------------------------
 -- Iterates the CObject game pool and attaches ox_target
 -- interaction zones to any already-spawned placed props.
 function SetupTargetInteractions()
@@ -1304,7 +1304,7 @@ function SetupTargetInteractions()
     if Config.Debug then print("Target interactions setup complete") end
 end
 
--- ─── RegisterNetEvent: registerTargetForModel ───────────────
+-- --- RegisterNetEvent: registerTargetForModel ---------------
 -- Registers ox_target interactions for all existing world
 -- instances of the specified model.
 RegisterNetEvent("flake_cooking:client:registerTargetForModel")
@@ -1362,7 +1362,7 @@ AddEventHandler("flake_cooking:client:registerTargetForModel", function(model)
     end
 end)
 
--- ─── TryPickupNearbyProp ────────────────────────────────────
+-- --- TryPickupNearbyProp ------------------------------------
 -- Determines the prop type from the entity's model hash and
 -- calls PickUpProp with the relevant config data.
 function TryPickupNearbyProp(entity)
@@ -1433,7 +1433,7 @@ function TryPickupNearbyProp(entity)
     return true
 end
 
--- ─── UseProp ────────────────────────────────────────────────
+-- --- UseProp ------------------------------------------------
 -- Finds the cooking prop config from the entity's model and
 -- calls OpenCookingMenu.
 function UseProp(entity)
@@ -1463,7 +1463,7 @@ function UseProp(entity)
     return true
 end
 
--- ─── Debug commands (Config.Debug only) ─────────────────────
+-- --- Debug commands (Config.Debug only) ---------------------
 if Config.Debug then
     -- /cleanupprops [radius]
     -- Deletes tracked props and loose world props within `radius` metres.
