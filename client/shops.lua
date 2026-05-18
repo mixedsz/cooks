@@ -3,9 +3,9 @@
 
 local shopPeds = {}  -- [storeIndex] = pedEntity
 
--- ─────────────────────────────────────────────────────────────
+-- -------------------------------------------------------------
 -- Cleanup on resource stop
--- ─────────────────────────────────────────────────────────────
+-- -------------------------------------------------------------
 
 local function cleanupPeds()
     for _, ped in pairs(shopPeds) do
@@ -21,9 +21,9 @@ AddEventHandler('onResourceStop', function(resourceName)
     cleanupPeds()
 end)
 
--- ─────────────────────────────────────────────────────────────
+-- -------------------------------------------------------------
 -- Purchase dialog (ox_lib input, used by the OX-context shop)
--- ─────────────────────────────────────────────────────────────
+-- -------------------------------------------------------------
 
 local function showPurchaseDialog(itemName, itemLabel, price)
     local result = lib.inputDialog('Purchase ' .. itemLabel, {
@@ -76,13 +76,13 @@ local function showPurchaseDialog(itemName, itemLabel, price)
     end
 end
 
--- ─────────────────────────────────────────────────────────────
+-- -------------------------------------------------------------
 -- Display shop menu
--- ─────────────────────────────────────────────────────────────
+-- -------------------------------------------------------------
 
 function DisplayShopMenu(shopData)
     if Config.ShopMenu == 'ox' then
-        -- ── OX Context Menu ─────────────────────────────────
+        -- -- OX Context Menu ---------------------------------
         local oxItems     = exports.ox_inventory:Items()
         local mainOptions = {}
 
@@ -130,7 +130,7 @@ function DisplayShopMenu(shopData)
         lib.showContext('main_menu')
 
     elseif Config.ShopMenu == 'ui' then
-        -- ── Custom NUI Shop ──────────────────────────────────
+        -- -- Custom NUI Shop ----------------------------------
         local oxItems      = exports.ox_inventory:Items()
         local flatItems    = {}
         local categoryList = {}
@@ -170,9 +170,9 @@ local function openShop(storeIndex)
     end
 end
 
--- ─────────────────────────────────────────────────────────────
+-- -------------------------------------------------------------
 -- Spawn store NPCs and register ox_target interactions
--- ─────────────────────────────────────────────────────────────
+-- -------------------------------------------------------------
 
 local function setupStores()
     for i, store in ipairs(Config.Stores) do

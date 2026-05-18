@@ -1,5 +1,5 @@
 -- ============================================================
--- flake_cooking – client/cooking.lua
+-- flake_cooking - client/cooking.lua
 -- ============================================================
 
 -- Module-level state
@@ -85,7 +85,7 @@ function GetPropOwner(entity)
     local owner = Entity(entity).state.owner
     if not owner then owner = 0 end
 
-    -- Legacy "charN" identifier – re-stamp with current player id
+    -- Legacy "charN" identifier - re-stamp with current player id
     if type(owner) == "string" and owner:match("^char%d+$") then
         local currentId
         if framework == "esx" and ESX then
@@ -125,7 +125,7 @@ function SetPropOwner(entity, ownerIdentifier)
         value = getPlayerCharId(ownerIdentifier)
     elseif type(ownerIdentifier) == "string" then
         if ownerIdentifier:match("^char%d+$") then
-            -- Legacy charN format – replace with current player's id
+            -- Legacy charN format - replace with current player's id
             if framework == "esx" and ESX then
                 local pd = ESX.GetPlayerData()
                 if pd and pd.identifier then
@@ -256,8 +256,8 @@ end
 -- ============================================================
 -- SetupCookingPropInteraction(entity, propType, propData)
 -- Adds two ox_target options to a cooking-appliance entity:
---   • "Use <label>"    – only the owner may interact (distance < 2 m)
---   • "Pick Up <label>" – only the owner may interact (distance < 2 m)
+--   * "Use <label>"    - only the owner may interact (distance < 2 m)
+--   * "Pick Up <label>" - only the owner may interact (distance < 2 m)
 -- ============================================================
 
 function SetupCookingPropInteraction(entity, propType, propData)
@@ -299,7 +299,7 @@ end
 -- ============================================================
 -- SetupDecorationPropInteraction(entity, propType, propData)
 -- Adds a single ox_target option to a decoration prop:
---   • "Pick Up <label>" – only the owner may interact (distance < 2 m)
+--   * "Pick Up <label>" - only the owner may interact (distance < 2 m)
 -- ============================================================
 
 function SetupDecorationPropInteraction(entity, propType, propData)

@@ -204,12 +204,12 @@ end)
 
 local function safeAddItem(source, itemName, qty)
     if not itemName then
-        print('^1[flake_cooking]^7: safeAddItem called with nil item name — check recipe/shop config')
+        print('^1[flake_cooking]^7: safeAddItem called with nil item name -- check recipe/shop config')
         return false
     end
     local oxItems = exports.ox_inventory:Items()
     if not oxItems or not oxItems[itemName] then
-        print('^1[flake_cooking]^7: Item "' .. itemName .. '" is not registered in ox_inventory — add it to ox_inventory/data/items.lua')
+        print('^1[flake_cooking]^7: Item "' .. itemName .. '" is not registered in ox_inventory -- add it to ox_inventory/data/items.lua')
         return false
     end
     local ok, err = pcall(function()
@@ -327,7 +327,7 @@ lib.callback.register('flake_cooking:purchaseItem', function(source, itemName, c
     local oxItems = exports.ox_inventory:Items()
     if not oxItems or not oxItems[itemName] then
         lib.notify(source, { title = 'Purchase Failed', description = 'Item not available', type = 'error' })
-        print('^1[flake_cooking]^7: Purchase blocked — "' .. tostring(itemName) .. '" not registered in ox_inventory')
+        print('^1[flake_cooking]^7: Purchase blocked -- "' .. tostring(itemName) .. '" not registered in ox_inventory')
         return false, 'Item not registered'
     end
 
@@ -371,7 +371,7 @@ lib.callback.register('flake_cooking:purchaseItem', function(source, itemName, c
                 end
             end
         end
-        lib.notify(source, { title = 'Purchase Failed', description = 'Item unavailable — payment refunded', type = 'error' })
+        lib.notify(source, { title = 'Purchase Failed', description = 'Item unavailable -- payment refunded', type = 'error' })
         return false, 'Item unavailable'
     end
 
@@ -388,7 +388,7 @@ lib.callback.register('flake_cooking:purchaseItems', function(source, items, pay
     if not items or #items == 0 then return false, 'No items to purchase' end
 
     -- Calculate total using server-side prices
-    -- NUI may send item name as 'item', 'name', 'id', or 'itemName' — accept all variants
+    -- NUI may send item name as 'item', 'name', 'id', or 'itemName' -- accept all variants
     local total = 0
     for _, item in ipairs(items) do
         local iName = item.item or item.name or item.id or item.itemName
@@ -424,14 +424,14 @@ lib.callback.register('flake_cooking:purchaseItems', function(source, items, pay
         local iName = item.item or item.name or item.id or item.itemName
         local qty   = item.count or item.quantity or item.amount or 1
         if not iName then
-            print('^1[flake_cooking]^7: purchaseItems — cart entry has no item name field, skipping')
+            print('^1[flake_cooking]^7: purchaseItems -- cart entry has no item name field, skipping')
         elseif not safeAddItem(source, iName, qty) then
             table.insert(failedItems, iName)
         end
     end
 
     if #failedItems == #items then
-        -- Every item failed — refund the whole payment
+        -- Every item failed -- refund the whole payment
         if total > 0 then
             if paymentMethod == 'cash' then
                 exports.ox_inventory:AddItem(source, 'money', total)
@@ -445,7 +445,7 @@ lib.callback.register('flake_cooking:purchaseItems', function(source, items, pay
                 end
             end
         end
-        lib.notify(source, { title = 'Purchase Failed', description = 'Items unavailable — payment refunded', type = 'error' })
+        lib.notify(source, { title = 'Purchase Failed', description = 'Items unavailable -- payment refunded', type = 'error' })
         return false, 'Items not registered in ox_inventory'
     end
 
@@ -631,7 +631,7 @@ local function registerUseableItem(itemName, cb)
         end)
     else
         print('^1[flake_cooking]^7: Failed to register useable item "' .. itemName ..
-              '" — ox_inventory:RegisterUsableItem not found and no framework fallback available')
+              '" -- ox_inventory:RegisterUsableItem not found and no framework fallback available')
     end
 end
 
