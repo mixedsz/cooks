@@ -18,12 +18,18 @@ shared_scripts {
 }
 
 client_scripts {
-    'client/*.lua',
+    'client/nui.lua',
+    'client/prop_placement.lua',
+    'client/cooking.lua',
+    'client/shops.lua',
+    'client/shop_nui.lua',
+    'client/food.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'server/*.lua',
+    'server/main.lua',
+    'server/food.lua',
 }
 
 files {
@@ -42,7 +48,5 @@ dependencies {
 
 escrow_ignore {
     'config/*.lua',
-    'client/*.lua',
-    'server/*.lua',
 }
 dependency '/assetpacks'
