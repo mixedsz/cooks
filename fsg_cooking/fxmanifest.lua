@@ -1,5 +1,3 @@
-shared_script '@WaveShield/resource/include.lua'
-
 fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
@@ -16,15 +14,22 @@ shared_scripts {
     'config/recipes.lua',
     'config/decorations.lua',
     'config/stores.lua',
+    'config/notify_wrapper.lua',
 }
 
 client_scripts {
-    'client/*.lua',
+    'client/nui.lua',
+    'client/prop_placement.lua',
+    'client/cooking.lua',
+    'client/shops.lua',
+    'client/shop_nui.lua',
+    'client/food.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'server/*.lua'
+    'server/main.lua',
+    'server/food.lua',
 }
 
 files {
